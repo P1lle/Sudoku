@@ -8,6 +8,7 @@
 int main()
 {
     printf("Hello to sudoku!\n");
+    spielstand=fopen("spielstand.txt","rw+");
     menu();
 
     int aktiv = 1;
@@ -27,25 +28,54 @@ char difficulty;
 int lastGame = 0;
 time_t startTime;
 time_t endTime;
+FILE *spielstand;
+
+void ladeSpiel(){
+    char number;
+    for (int row = 0; row < 9; row++){                      // Die Zahlen in der Datei werden formatiert
+        for (int column = 0; column < 9; column++){
+            number = fgetc(spielstand);
+            if((int)number - 48 == 0) {
+                boolSudoku[row][column] = 1;            // Bei einer Null in der Datei, ist die Zahl veränderbar.
+            } else {
+                boolSudoku[row][column] = 0;            // Wenn keine Null darin steht, ist sie nicht veränderbar.
+            }
+            sudoku[row][column] = (int)number - 48;
+        }
+    }
+}
 
 // Startmenü - Kommt nur am Anfang
 
 void menu()
 {
     char ch;
+    int choice=2;
 
     printf("Menu:\n");
     printf("1. Neues Spiel\n");
     printf("2. Ende\n");
+    if(spielstand!=NULL) {
+        printf("3. Spiel laden\n");
+        choice++;
+    }
     printf("Bitte Auswahl treffen: ");
 
     do {
         ch = getchar();
-    } while(ch != '1' && ch != '2');
-    if (ch == '1') {
+    } while(ch<0 || ch>choice);
+
+    switch (ch)
+    {
+    case 1:
         menuNewGame();
-    } else if (ch == '2') {
+        break;
+    case 2:
         return;
+    case 3:
+        ladeSpiel();
+    default:
+        break;
     }
 }
 
@@ -108,11 +138,8 @@ void createSudoku() {
         exit(EXIT_FAILURE);
     }
 
-    int column;
-    int row;
-
-    for (row = 0; row < 9; row++){                      // Die Zahlen in der Datei werden formatiert
-        for (column = 0; column < 9; column++){
+    for (int row = 0; row < 9; row++){                      // Die Zahlen in der Datei werden formatiert
+        for (int column = 0; column < 9; column++){
             c = fgetc(fp);
             if((int)c - 48 == 0) {
                 boolSudoku[row][column] = 1;            // Bei einer Null in der Datei, ist die Zahl veränderbar.
@@ -132,19 +159,17 @@ void createSudoku() {
 
 void printSudoku(){
 
-    int column;
-    int row;
     int k = 1;
 
     printf("    1  2  3   4  5  6   7  8  9\n");
-    for (row = 0; row < 9; row++) {
+    for (int row = 0; row < 9; row++) {
         if (row % 3 == 0) {
             printf("  +---------+---------+---------+\n");
         }
         printf("%d ",k);
         k++;
 
-        for(column = 0; column < 9; column++) {
+        for(int column = 0; column < 9; column++) {
             if (column % 3 == 0) {
                 printf("|");
             }
@@ -162,6 +187,20 @@ void printSudoku(){
     printf("  +---------+---------+---------+\n");
 }
 
+
+//Zum Speichern des Spielstandes
+void speichereSpiel(){
+    spielstand = fopen("spielstand.txt","w+");
+    for (int i = 0; i < 9; i++)
+    {
+        for (int j = 0; j < 9; j++)
+        {
+            fputc(sudoku[i][j],spielstand);
+        }
+    }
+    fclose(spielstand);
+}
+
 // Neue Menueeingabe. Was will man mit dem Sudoku machen?
 
 int menueeingabe()
@@ -172,7 +211,8 @@ int menueeingabe()
     printf("1. Neues Spiel\n");
     printf("2. spielen \n");
     printf("3. Spiel pruefen \n");
-    printf("4. Ende\n");
+    printf("4. Spielstand speichern.");
+    printf("5. Ende\n");
     printf("Bitte Auswahl treffen: ");
 
     do {
@@ -185,7 +225,9 @@ int menueeingabe()
         eingabeSudoku();
     } else if (ch == '3') {
         pruefeSpiel();
-    } else if (ch == '4') {
+    }else if (ch=='4'){
+        speichereSpiel();
+    }else if (ch == '5') {
         time(&endTime);
         printf("Sie haben fuer dieses Spiel %d Sekunden gebraucht! \n", endTime-startTime);
         return 0;
@@ -268,17 +310,15 @@ void pruefeSpiel() {
         exit(EXIT_FAILURE);
     }
 
-    int loesungcolumn;
-    int loesungrow;
     char c;
     int fail = 0;
 
-    for (loesungrow = 0; loesungrow < 9; loesungrow++){                      // Die Zahlen in der Datei werden formatiert
+    for (int loesungrow = 0; loesungrow < 9; loesungrow++){                      // Die Zahlen in der Datei werden formatiert
         if (fail == 1) {
             break;
         }
 
-        for (loesungcolumn = 0; loesungcolumn < 9; loesungcolumn++){
+        for (int loesungcolumn = 0; loesungcolumn < 9; loesungcolumn++){
             c = fgetc(loesungenFile);
             if (sudoku[loesungrow][loesungcolumn] != (int)c - 48) {
                 printf("\nDie Loesung an der Stelle %d,%d ist nicht korrekt! aktueller Wert %d \n\n", loesungrow+1, loesungcolumn+1, sudoku[loesungrow][loesungcolumn]);
